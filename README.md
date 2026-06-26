@@ -187,7 +187,3 @@ A: 检查 `conf/app_config.yaml` 中 `llm.api_key` 是否为有效的 DeepSeek K
 ## 许可证
 
 MIT License（见 [LICENSE](LICENSE)）
-
-## 致谢
-
-- [data_agent](https://github.com) 参考实现
