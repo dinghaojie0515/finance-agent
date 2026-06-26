@@ -1,0 +1,33 @@
+[project]
+name = "finance-agent"
+version = "0.1.0"
+description = "NL2SQL financial intelligent query agent based on LangGraph"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncmy>=0.2.9",
+    "cryptography>=45",
+    "elasticsearch[async]>=8,<9",
+    "fastapi[standard]>=0.115",
+    "huggingface-hub==0.36.0",
+    "jieba>=0.42",
+    "langchain>=0.3",
+    "langchain-deepseek>=0.1",
+    "langchain-huggingface==1.2.1",
+    "langchain-openai>=1.3.3",
+    "langgraph>=0.4",
+    "loguru>=0.7",
+    "omegaconf>=2.3",
+    "pymysql>=1.2.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6",
+    "qdrant-client==1.16.2",
+    "sqlalchemy>=2.0",
+]
+
+[project.scripts]
+init-meta-db = "init_meta_db:init_meta_db"
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
+default = true

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual env
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs & local data
+logs/
+*.log
+
+# Secrets — copy from conf/app_config.yaml.example
+.env
+conf/app_config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cursor / local assets
+assets/

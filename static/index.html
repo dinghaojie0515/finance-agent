@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>金融问数 · Finance Agent</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --bg-card: #111a2e;
+      --bg-input: #0d1526;
+      --border: #1e2d4a;
+      --text: #e8edf7;
+      --text-muted: #8b9bb8;
+      --accent: #c9a227;
+      --accent-soft: rgba(201, 162, 39, 0.15);
+      --success: #34d399;
+      --danger: #f87171;
+      --step-pending: #2a3a5c;
+      --step-active: #3b82f6;
+      --step-done: #10b981;
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(ellipse at top, #152238 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 32px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+      min-height: 100vh;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { order: 2; }
+    }
+
+    .sidebar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #e8c547);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #1a1200;
+      font-size: 18px;
+    }
+
+    .brand h1 { font-size: 18px; font-weight: 600; }
+    .brand p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .steps-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .step.active { background: rgba(59, 130, 246, 0.12); }
+    .step.done { opacity: 0.85; }
+
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+      background: var(--step-pending);
+    }
+
+    .step.active .step-dot {
+      background: var(--step-active);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .step.done .step-dot { background: var(--step-done); }
+
+    .step-body { flex: 1; min-width: 0; }
+    .step-label { font-weight: 500; }
+    .step-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: calc(100vh - 56px);
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .output-grid { grid-template-columns: 1fr; }
+    }
+
+    .result-panel .table-wrap {
+      max-height: 480px;
+      overflow: auto;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header h2 { font-size: 16px; font-weight: 600; }
+    .status-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .status-badge.running { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .status-badge.error { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
+    .status-badge.done { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .msg {
+      max-width: 92%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.6;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #1e3a5f, #1a2f4f);
+      border: 1px solid #2a4a72;
+    }
+
+    .msg.assistant {
+      align-self: flex-start;
+      background: #0f1829;
+      border: 1px solid var(--border);
+    }
+
+    .msg.error {
+      align-self: flex-start;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #fecaca;
+    }
+
+    .examples {
+      padding: 0 20px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .example-chip {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .example-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-area input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-area input:focus { border-color: var(--accent); }
+    .input-area input:disabled { opacity: 0.6; }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 0 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #e0b83a);
+      color: #1a1200;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .sql-panel, .result-panel { padding: 16px 20px; }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    pre.sql-block {
+      background: #080e1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #a5d6ff;
+    }
+
+    .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      background: #0a1020;
+      color: var(--accent);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .empty-hint {
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .row-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">金</div>
+        <div>
+          <h1>金融问数</h1>
+          <p>NL2SQL 智能查询</p>
+        </div>
+      </div>
+      <div class="steps-title">处理流程</div>
+      <ul class="steps" id="steps"></ul>
+    </aside>
+
+    <div class="main">
+      <section class="panel chat-panel">
+        <div class="chat-header">
+          <h2>对话查询</h2>
+          <span class="status-badge" id="statusBadge">就绪</span>
+        </div>
+        <div class="messages" id="messages">
+          <div class="msg assistant">你好，我是金融问数助手。你可以用自然语言提问，例如「各分行存款余额是多少？」</div>
+        </div>
+        <div class="examples" id="examples"></div>
+        <div class="input-area">
+          <input id="queryInput" type="text" placeholder="输入你的问题，按 Enter 发送..." autocomplete="off" />
+          <button class="btn btn-primary" id="sendBtn">发送</button>
+        </div>
+      </section>
+
+      <div class="output-grid" id="outputGrid" style="display:none">
+        <section class="panel sql-panel" id="sqlPanel">
+          <div class="panel-title">生成的 SQL</div>
+          <pre class="sql-block" id="sqlBlock"></pre>
+        </section>
+
+        <section class="panel result-panel" id="resultPanel">
+          <div class="panel-title">查询结果</div>
+          <div class="table-wrap" id="tableWrap">
+            <div class="empty-hint">等待查询结果...</div>
+          </div>
+          <div class="row-count" id="rowCount"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PIPELINE = [
+      { id: "extract_keywords", label: "提取关键词" },
+      { id: "recall_column", label: "召回相关字段" },
+      { id: "recall_metric", label: "召回相关指标" },
+      { id: "recall_value", label: "召回字段取值" },
+      { id: "merge_retrieved_info", label: "合并召回信息" },
+      { id: "filter_table", label: "筛选表与字段" },
+      { id: "filter_metric", label: "筛选相关指标" },
+      { id: "add_extra_context", label: "补充关联字段" },
+      { id: "build_final_context", label: "构建查询上下文" },
+      { id: "generate_sql", label: "生成 SQL" },
+      { id: "validate_sql", label: "验证 SQL" },
+      { id: "correct_sql", label: "修正 SQL" },
+      { id: "execute_sql", label: "执行查询" },
+    ];
+
+    const EXAMPLES = [
+      "各分行存款余额是多少？",
+      "本月新增个人账户数有多少？",
+      "北京地区 active 状态的机构有哪些？",
+      "各渠道交易金额汇总",
+      "理财赎回金额按产品统计",
+    ];
+
+    const stepsEl = document.getElementById("steps");
+    const messagesEl = document.getElementById("messages");
+    const queryInput = document.getElementById("queryInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const statusBadge = document.getElementById("statusBadge");
+    const outputGrid = document.getElementById("outputGrid");
+    const sqlPanel = document.getElementById("sqlPanel");
+    const sqlBlock = document.getElementById("sqlBlock");
+    const resultPanel = document.getElementById("resultPanel");
+    const tableWrap = document.getElementById("tableWrap");
+    const rowCount = document.getElementById("rowCount");
+    const examplesEl = document.getElementById("examples");
+
+    let running = false;
+    const stepState = {};
+
+    function initSteps() {
+      stepsEl.innerHTML = PIPELINE.map(
+        (s) => `
+        <li class="step" data-step="${s.id}">
+          <span class="step-dot"></span>
+          <div class="step-body">
+            <div class="step-label">${s.label}</div>
+            <div class="step-detail"></div>
+          </div>
+        </li>`
+      ).join("");
+    }
+
+    function initExamples() {
+      examplesEl.innerHTML = EXAMPLES.map(
+        (q) => `<button type="button" class="example-chip" data-q="${q}">${q}</button>`
+      ).join("");
+      examplesEl.addEventListener("click", (e) => {
+        const chip = e.target.closest(".example-chip");
+        if (!chip || running) return;
+        queryInput.value = chip.dataset.q;
+        submitQuery();
+      });
+    }
+
+    function setStatus(text, cls = "") {
+      statusBadge.textContent = text;
+      statusBadge.className = "status-badge " + cls;
+    }
+
+    function resetSteps() {
+      PIPELINE.forEach((s) => {
+        stepState[s.id] = "pending";
+      });
+      stepsEl.querySelectorAll(".step").forEach((el) => {
+        el.className = "step";
+        el.querySelector(".step-detail").textContent = "";
+      });
+    }
+
+    function updateStep(node, detail) {
+      const el = stepsEl.querySelector(`[data-step="${node}"]`);
+      if (!el) return;
+      stepState[node] = "done";
+      el.classList.add("done");
+      if (detail) el.querySelector(".step-detail").textContent = detail;
+
+      const next = PIPELINE.find((s) => stepState[s.id] === "pending");
+      stepsEl.querySelectorAll(".step.active").forEach((n) => n.classList.remove("active"));
+      if (next) {
+        const nextEl = stepsEl.querySelector(`[data-step="${next.id}"]`);
+        if (nextEl) nextEl.classList.add("active");
+      }
+    }
+
+    function addMessage(text, role = "assistant") {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
+    }
+
+    function renderTable(rows) {
+      if (!rows || rows.length === 0) {
+        tableWrap.innerHTML = '<div class="empty-hint">查询成功，但没有返回数据</div>';
+        rowCount.textContent = "共 0 行";
+        return;
+      }
+      const cols = Object.keys(rows[0]);
+      const thead = `<tr>${cols.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}</tr>`;
+      const tbody = rows
+        .map(
+          (row) =>
+            `<tr>${cols.map((c) => `<td>${escapeHtml(String(row[c] ?? ""))}</td>`).join("")}</tr>`
+        )
+        .join("");
+      tableWrap.innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+      rowCount.textContent = `共 ${rows.length} 行`;
+    }
+
+    function escapeHtml(s) {
+      return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showSql(sql) {
+      outputGrid.style.display = "grid";
+      sqlBlock.textContent = sql;
+    }
+
+    function showResult(rows) {
+      outputGrid.style.display = "grid";
+      renderTable(rows);
+      const n = rows?.length ?? 0;
+      addMessage(`查询完成，共返回 ${n} 行数据，见右侧结果表。`);
+      resultPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    async function submitQuery() {
+      const query = queryInput.value.trim();
+      if (!query || running) return;
+
+      running = true;
+      sendBtn.disabled = true;
+      queryInput.disabled = true;
+      resetSteps();
+      setStatus("分析中...", "running");
+      outputGrid.style.display = "none";
+      tableWrap.innerHTML = '<div class="empty-hint">等待查询结果...</div>';
+      rowCount.textContent = "";
+      addMessage(query, "user");
+
+      const firstPending = PIPELINE[0];
+      const firstEl = stepsEl.querySelector(`[data-step="${firstPending.id}"]`);
+      if (firstEl) firstEl.classList.add("active");
+
+      try {
+        const resp = await fetch("/api/v1/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error(errText || `HTTP ${resp.status}`);
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith("data:")) continue;
+            const jsonStr = line.slice(5).trim();
+            if (!jsonStr) continue;
+
+            let data;
+            try {
+              data = JSON.parse(jsonStr);
+            } catch {
+              continue;
+            }
+
+            if (data.type === "step") {
+              updateStep(data.node, data.detail);
+            } else if (data.type === "sql") {
+              showSql(data.content);
+            } else if (data.type === "result") {
+              showResult(data.content);
+            } else if (data.type === "message" && data.content) {
+              if (data.content.includes("正在生成 SQL") || data.content.includes("SQL 修正中")) {
+                continue;
+              }
+              const short = data.content.length > 500
+                ? data.content.slice(0, 500) + "..."
+                : data.content;
+              if (!data.content.includes("```json")) {
+                addMessage(short);
+              }
+            } else if (data.type === "done") {
+              setStatus("完成", "done");
+            }
+          }
+        }
+
+        if (statusBadge.textContent === "分析中...") {
+          setStatus("完成", "done");
+        }
+      } catch (err) {
+        setStatus("失败", "error");
+        addMessage(`请求失败：${err.message}`, "error");
+      } finally {
+        running = false;
+        sendBtn.disabled = false;
+        queryInput.disabled = false;
+        queryInput.focus();
+      }
+    }
+
+    sendBtn.addEventListener("click", submitQuery);
+    queryInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitQuery();
+    });
+
+    initSteps();
+    initExamples();
+    queryInput.focus();
+  </script>
+</body>
+</html>
