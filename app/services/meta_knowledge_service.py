@@ -94,9 +94,9 @@ class MetaKnowledgeService:
                 )
                 column_infos.append(column_info)
 
-        # async with self.meta_mysql_repository.session.begin():
-        #     await self.meta_mysql_repository.save_table_infos(table_infos)
-        #     await self.meta_mysql_repository.save_column_infos(column_infos)
+        async with self.meta_mysql_repository.session.begin():
+            await self.meta_mysql_repository.save_table_infos(table_infos)
+            await self.meta_mysql_repository.save_column_infos(column_infos)
 
         return column_infos
 
